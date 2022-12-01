@@ -2,4 +2,4 @@
 
 ![preview](preview.jfif)
 
-custom contract to get your mutant after consuming (burning) the toxic beer.
+Custom contract to get your mutant after consuming (burning) the toxic beer.
