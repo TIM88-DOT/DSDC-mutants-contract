@@ -1,5 +1,5 @@
 # DSDC-mutants-contract
 
-![img](blob:https://web.telegram.org/399144d8-414b-4aa0-9a4a-e277614fa1ac)
+![img](https://gyazo.com/d467d2d1c43db9001733df367bfafd7a)
 
 custom contract to get your mutant after consuming (burning) the toxic beer.
