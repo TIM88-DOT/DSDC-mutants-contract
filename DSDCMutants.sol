@@ -20,9 +20,9 @@ interface IDSDC {
 contract DSDCMutants is ERC721Base, ReentrancyGuard {
     using SafeMath for uint256;
 
-    IDSDC dsdc;
+    IDSDC public dsdc;
 
-    IToxicBeer toxicbeer;
+    IToxicBeer public toxicbeer;
 
     IERC20 public stink;
 
@@ -30,6 +30,10 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
     uint256 public price = 5000 * 10**18;
 
     string private baseURI;
+
+    uint256 public mutationDuration = 200;
+    mapping(address => uint256) public userMutationDuration;
+    mapping(address => uint256[]) public userDsdcToBeMutated;
 
     constructor(
         string memory _name,
@@ -43,17 +47,35 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
         stink = IERC20(_stink);
     }
 
-    function mutate(uint256[] calldata tokenIds) external nonReentrant {
+    function claimMutant() external nonReentrant {
+        require(
+            userMutationDuration[msg.sender] + mutationDuration <=
+                block.timestamp,
+            "Mutation still ongoing..."
+        );
+        uint256[] memory userMutants = userDsdcToBeMutated[msg.sender];
+        for (uint256 i = 0; i < userMutants.length; ++i) {
+            _safeMint(msg.sender, userMutants[i]);
+        }
+        delete userDsdcToBeMutated[msg.sender];
+    }
+
+    function consumeToxicBeer(uint256[] calldata tokenIds)
+        external
+        nonReentrant
+    {
         uint256 amount = tokenIds.length;
         uint256[] memory userToxicBeers = toxicbeer.walletOfOwner(msg.sender);
         require(mutationIsActive, "Mutation not started yet");
         require(amount <= userToxicBeers.length, "Not enough beers");
-        require(amount > 0 && amount <= 50, "Invalid amount");
+        require(amount > 0 && amount <= 20, "Invalid amount max is 20");
+        require(userDsdcToBeMutated[msg.sender].length == 0, "You already have a mutation pending !");
         stink.transferFrom(msg.sender, address(this), price * amount);
         for (uint256 i = 0; i < amount; ++i) {
-            _mutate(tokenIds[i]);
+            _prepareForMutation(tokenIds[i]);
             _burnToxicBeer(userToxicBeers[i]);
         }
+        userMutationDuration[msg.sender] = block.timestamp;
     }
 
     function withdraw() external onlyOwner {
@@ -100,24 +122,33 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
         price = _price;
     }
 
+    function setMutationDuration(uint256 _newDuration) external onlyOwner {
+        mutationDuration = _newDuration;
+    }
+
     function _baseURI() internal view override returns (string memory) {
         return baseURI;
     }
 
-    function _mutate(uint256 tokenId) internal {
+    function _prepareForMutation(uint256 tokenId) internal {
         require(
             dsdc.ownerOf(tokenId) == msg.sender,
             "Must own the DSDC to mutate"
         );
         require(!_exists(tokenId), "DSDC already mutated");
-        _safeMint(msg.sender, tokenId);
+        userDsdcToBeMutated[msg.sender].push(tokenId);
     }
+    
 
     function _burnToxicBeer(uint256 tokenId) internal {
         require(
             toxicbeer.ownerOf(tokenId) == msg.sender,
             "you are not the owner of the beer"
         );
-        toxicbeer.transferFrom(msg.sender, address(0x000000000000000000000000000000000000dEaD), tokenId);
+        toxicbeer.transferFrom(
+            msg.sender,
+            address(0x000000000000000000000000000000000000dEaD),
+            tokenId
+        );
     }
 }
