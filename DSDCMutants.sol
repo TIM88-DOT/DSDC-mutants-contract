@@ -67,8 +67,8 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
         uint256 amount = tokenIds.length;
         uint256[] memory userToxicBeers = toxicbeer.walletOfOwner(msg.sender);
         require(mutationIsActive, "Mutation not started yet");
-        require(amount <= userToxicBeers.length, "Not enough beers");
         require(amount > 0 && amount <= 20, "Invalid amount max is 20");
+        require(amount <= userToxicBeers.length, "Not enough beers");
         require(userDsdcToBeMutated[msg.sender].length == 0, "You already have a mutation pending !");
         stink.transferFrom(msg.sender, address(this), price * amount);
         for (uint256 i = 0; i < amount; ++i) {
@@ -141,10 +141,6 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
     
 
     function _burnToxicBeer(uint256 tokenId) internal {
-        require(
-            toxicbeer.ownerOf(tokenId) == msg.sender,
-            "you are not the owner of the beer"
-        );
         toxicbeer.transferFrom(
             msg.sender,
             address(0x000000000000000000000000000000000000dEaD),
