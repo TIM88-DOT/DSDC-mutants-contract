@@ -48,13 +48,13 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
     }
 
     function claimMutant() external nonReentrant {
-        require(userDsdcToBeMutated[msg.sender].length > 0, "Nothing to claim !");
         require(
             userMutationDuration[msg.sender] + mutationDuration <=
                 block.timestamp,
             "Mutation still ongoing..."
         );
         uint256[] memory userMutants = userDsdcToBeMutated[msg.sender];
+        require(userMutants.length > 0, "Nothing to claim !");
         for (uint256 i = 0; i < userMutants.length; ++i) {
             _safeMint(msg.sender, userMutants[i]);
         }
