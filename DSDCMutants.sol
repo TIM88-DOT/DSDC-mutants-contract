@@ -6,11 +6,17 @@ import "./ERC721Base.sol";
 import "@openzeppelin/contracts/utils/math/SafeMath.sol";
 import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-interface IToxicBeer is IERC721 {
+interface IToxicBeer {
     function walletOfOwner(address _owner)
         external
         view
         returns (uint256[] memory);
+
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) external;
 }
 
 interface IDSDC {
@@ -22,11 +28,11 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
 
     event MutationComplete(address owner, uint256[] tokenIds);
 
-    IDSDC public dsdc;
+    IDSDC public immutable dsdc;
 
-    IToxicBeer public toxicbeer;
+    IToxicBeer public immutable toxicbeer;
 
-    IERC20 public stink;
+    IERC20 public immutable stink;
 
     bool public mutationIsActive;
     uint256 public price = 5000 * 10**18;
