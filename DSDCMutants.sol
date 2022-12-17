@@ -26,7 +26,12 @@ interface IDSDC {
 contract DSDCMutants is ERC721Base, ReentrancyGuard {
     using SafeMath for uint256;
 
-    event MutationComplete(address owner, uint256[] tokenIds);
+    event MutationStarted(address owner, uint256[] tokenIds, uint256 timeStamp);
+    event MutationComplete(
+        address owner,
+        uint256[] tokenIds,
+        uint256 timeStamp
+    );
 
     IDSDC public immutable dsdc;
 
@@ -35,13 +40,15 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
     IERC20 public immutable stink;
 
     bool public mutationIsActive;
-    uint256 public price = 5000 * 10**18;
+
+    uint256 public price = 10 * 10**18;
 
     string private baseURI;
 
     uint256 public mutationDuration = 200;
     mapping(address => uint256) public userMutationDuration;
     mapping(address => uint256[]) public userDsdcToBeMutated;
+    mapping(uint256 => bool) public dsdcBeingMutated;
 
     constructor(
         string memory _name,
@@ -65,8 +72,9 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
         require(userMutants.length > 0, "Nothing to claim !");
         for (uint256 i = 0; i < userMutants.length; ++i) {
             _safeMint(msg.sender, userMutants[i]);
+            dsdcBeingMutated[userMutants[i]] = false;
         }
-        emit MutationComplete(msg.sender, userMutants);
+        emit MutationComplete(msg.sender, userMutants, block.timestamp);
         delete userDsdcToBeMutated[msg.sender];
     }
 
@@ -90,6 +98,7 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
             _burnToxicBeer(userToxicBeers[i]);
         }
         userMutationDuration[msg.sender] = block.timestamp;
+        emit MutationStarted(msg.sender, tokenIds, block.timestamp);
     }
 
     function withdrawStink() external onlyOwner {
@@ -105,7 +114,7 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
     }
 
     function dsdcCanMutate(uint256 tokenId) external view returns (bool) {
-        return !_exists(tokenId);
+        return !_exists(tokenId) && !dsdcBeingMutated[tokenId];
     }
 
     function dsdcsCanMutate(uint256[] calldata tokenIds)
@@ -115,7 +124,9 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
     {
         transformable = new bool[](tokenIds.length);
         for (uint256 index = 0; index < tokenIds.length; index++) {
-            transformable[index] = !_exists(tokenIds[index]);
+            transformable[index] =
+                !_exists(tokenIds[index]) &&
+                !dsdcBeingMutated[tokenIds[index]];
         }
     }
 
@@ -140,8 +151,12 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
             dsdc.ownerOf(tokenId) == msg.sender,
             "Must own the DSDC to mutate"
         );
-        require(!_exists(tokenId), "DSDC already mutated");
+        require(
+            !_exists(tokenId) && !dsdcBeingMutated[tokenId],
+            "DSDC already mutated or is being mutated"
+        );
         userDsdcToBeMutated[msg.sender].push(tokenId);
+        dsdcBeingMutated[tokenId] = true;
     }
 
     function _burnToxicBeer(uint256 tokenId) internal {
