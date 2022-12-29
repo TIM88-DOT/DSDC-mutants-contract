@@ -90,16 +90,12 @@ contract DSDCMutants is ERC721Base, ReentrancyGuard {
 
         uint256 amount = tokenIds.length;
         uint256[] memory userToxicBeers = toxicbeer.walletOfOwner(msg.sender);
-        uint256 userToxicBeersLength = userToxicBeers.length;
 
         require(amount > 0 && amount <= 20, "Invalid amount max is 20");
-        require(amount <= userToxicBeersLength, "Not enough beers");
-
-        uint256 userDsdcToBeMutatedLength = userDsdcToBeMutated[msg.sender]
-            .length;
+        require(amount <= userToxicBeers.length, "Not enough beers");
 
         require(
-            userDsdcToBeMutatedLength == 0,
+            userDsdcToBeMutated[msg.sender].length == 0,
             "You already have a mutation pending !"
         );
 
